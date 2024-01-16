@@ -1,0 +1,14 @@
+MODULE_TOPDIR = ../..
+
+PGM = r.series.accumulate
+
+LIBES = $(RASTERLIB) $(GISLIB)
+DEPENDENCIES = $(RASTERDEP) $(GISDEP)
+
+EXTRA_LIBS = $(OPENMP_LIBPATH) $(OPENMP_LIB)
+EXTRA_CFLAGS = $(OPENMP_CFLAGS)
+EXTRA_INC = $(OPENMP_INCPATH)
+
+include $(MODULE_TOPDIR)/include/Make/Module.make
+
+default: cmd

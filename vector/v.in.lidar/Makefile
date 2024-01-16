@@ -1,0 +1,15 @@
+MODULE_TOPDIR = ../..
+
+PGM=v.in.lidar
+
+LIBES = $(GPROJLIB) $(VECTORLIB) $(DBMILIB) $(GISLIB) $(LASLIBS) $(MATHLIB)
+DEPENDENCIES = $(GPROJDEP) $(VECTORDEP) $(DBMIDEP) $(GISDEP)
+
+EXTRA_INC = $(VECT_INC) $(PROJINC) $(LASINC)
+EXTRA_CFLAGS = $(VECT_CFLAGS)
+
+include $(MODULE_TOPDIR)/include/Make/Module.make
+
+ifneq ($(USE_LIBLAS),)
+default: cmd
+endif

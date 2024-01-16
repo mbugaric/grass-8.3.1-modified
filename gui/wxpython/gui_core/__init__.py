@@ -1,0 +1,17 @@
+all = [
+    "query",
+    "widgets",
+    "preferences",
+    "menu",
+    "infobar",
+    "dialogs",
+    "mapwindow",
+    "mapdisp",
+    "gselect",
+    "ghelp",
+    "prompt",
+    "goutput",
+    "forms",
+    "toolbars",
+    "treeview",
+]
