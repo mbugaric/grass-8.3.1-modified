@@ -2,7 +2,7 @@
  --with-libs=/usr/lib64 \
  --with-cxx \
  --without-ffmpeg \
- --with-gdal=o/bin/gdal-config \
+ --with-gdal=/usr/bin/gdal-config \
  --without-odbc \
  --with-sqlite \
  --with-postgres \
