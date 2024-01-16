@@ -70,6 +70,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <math.h>
 #include <grass/gis.h>
 #include <grass/raster.h>
@@ -78,7 +79,8 @@
 
 #define DATA(map, r, c) (map)[(r)*ncols + (c)]
 
-/*measurements of the 13 fuel models, input of Rothermel equation (1972) */
+/*
+//measurements of the 13 fuel models, input of Rothermel equation (1972)
 float WO[4][14] = {{0, 0.034, 0.092, 0.138, 0.230, 0.046, 0.069, 0.052, 0.069,
                     0.134, 0.138, 0.069, 0.184, 0.322},
                    {0, 0, 0.046, 0, 0.184, 0.023, 0.115, 0.086, 0.046, 0.019,
@@ -87,9 +89,9 @@ float WO[4][14] = {{0, 0.034, 0.092, 0.138, 0.230, 0.046, 0.069, 0.052, 0.069,
                     0.253, 0.759, 1.288},
                    {0, 0, 0.023, 0, 0.230, 0.092, 0, 0.017, 0, 0, 0.092, 0, 0}};
 
-/*ovendry fuel loading, lb./ft.^2 */
+//ovendry fuel loading, lb./ft.^2 
 float DELTA[] = {0,   1.0, 1.0, 2.5, 6.0, 2.0, 2.5,
-                 2.5, 0.2, 0.2, 1.0, 1.0, 2.3, 3.0}; /*fuel depth, ft. */
+                 2.5, 0.2, 0.2, 1.0, 1.0, 2.3, 3.0}; /*fuel depth, ft. 
 
 float SIGMA[4][14] = {
     {0, 3500, 3000, 1500, 2000, 2000, 1750, 1750, 2000, 2500, 2000, 1500, 1500,
@@ -98,14 +100,61 @@ float SIGMA[4][14] = {
     {0, 0, 30, 0, 30, 0, 30, 30, 30, 30, 30, 30, 30, 30},
     {0, 0, 1500, 0, 1500, 1500, 0, 1500, 0, 0, 1500, 0, 0, 0}};
 
-/*fuel particle surface-area-to-volume ratio, 1/ft. */
+//fuel particle surface-area-to-volume ratio, 1/ft. 
 float MX[] = {
     0,    0.12, 0.15, 0.25, 0.20, 0.20, 0.25, 0.40,
-    0.30, 0.25, 0.25, 0.15, 0.20, 0.25}; /*moisture content of extinction */
+    0.30, 0.25, 0.25, 0.15, 0.20, 0.25}; //moisture content of extinction 
+*/
+
+float WO[4][41] =
+    { {0, 0.034, 0.092, 0.138, 0.230, 0.046, 0.069, 0.052, 0.069, 0.134,
+       0.138, 0.069, 0.184, 0.322, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+{0, 0, 0.046, 0, 0.184, 0.023, 0.115, 0.086, 0.046, 0.019, 0.092, 0.207,
+ 0.644, 1.058, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+{0, 0, 0.023, 0, 0.092, 0, 0.092, 0.069, 0.115, 0.007, 0.230, 0.253, 0.759,
+ 1.288, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+{0, 0, 0.023, 0, 0.230, 0.092, 0, 0.017, 0, 0, 0.092, 0, 0,
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+};/*ovendry fuel loading, lb./ft.^2 */
+
+float DELTA[] = { 0, 1.0, 1.0, 2.5, 6.0, 2.0, 2.5, 2.5,
+    0.2, 0.2, 1.0, 1.0, 2.3, 3.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};/*fuel depth, ft. */
+
+float SIGMA[4][41] =
+    { {0, 3500, 3000, 1500, 2000, 2000, 1750, 1750, 2000, 2500, 2000, 1500,
+       1500, 1500, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+{0, 0, 109, 0, 109, 109, 109, 109, 109, 109, 109, 109, 109, 109, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+{0, 0, 30, 0, 30, 0, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30,
+	   30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30},
+{0, 0, 1500, 0, 1500, 1500, 0, 1500, 0, 0, 1500, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+};
+/*citation:
+For all fuel models in this new set:
+� 10-hr dead fuel SAV is 109 1/ft, and 100-hr SAV is 30 1/ft
+*/
+/*fuel particale surface-area-to-volume ratio, 1/ft. */
+float MX[] = { 0, 0.12, 0.15, 0.25, 0.20, 0.20, 0.25, 0.40,
+    0.30, 0.25, 0.25, 0.15, 0.20, 0.25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};/*moisture content of extinction */
 
 CELL *map_elev; /*full array for elevation map layer (for spotting) */
 int nrows, ncols;
 struct Cell_head window;
+
+/*** Dodao Marin */
+//Number of fuel categories, by default 13 Albini Anderson categories
+int  numCategories = 13;
+/*Kraj - Marin */
 
 int main(int argc, char *argv[])
 {
@@ -115,7 +164,7 @@ int main(int argc, char *argv[])
         rhop = 32,    /*ovendry fuel density, lb./ft.^3 */
         ST = 0.0555;  /*fuel total mineral content, lb. minerals/lb. ovendry */
 
-    float sigma[14];
+    float sigma[40];
 
     /***derived parameters of Rothermel equation (1972)***/
     float R,                            /*rate of spread, ft./min.
@@ -141,19 +190,19 @@ int main(int argc, char *argv[])
         phis, /*slope coefficient,phis = 5.275/beta^0.3*(tan(theta)^2) */
         rhob, /*ovendry bulk density, lb./ft.^3, rohb = wo/delta */
         epsilon[4]
-               [14], /*effective heating number, epsilon = 1/exp(138/sigma) */
-        Qig[14],     /*heat of preignition, BTU/lb.  Qig = 250+1116*Mf */
+               [41], /*effective heating number, epsilon = 1/exp(138/sigma) */
+        Qig[41],     /*heat of preignition, BTU/lb.  Qig = 250+1116*Mf */
         beta;        /*packing ratio,  beta = rhob/rhop  */
 
     /***intermediate variables***/
     float R0, /*base ROS (w/out wind/slope) */
         Rdir, sin_fac, cos_fac,
-        Ffactor_all[4][14],     /*in all fuel subclasses by sigma/WO */
-        Ffactor_in_dead[3][14], /*in dead fuel subclasses by sigma/WO */
-        /* Ffactor_dead[14], */ /*dead fuel weight by sigma/WO */
-        /* Ffactor_live[14], */ /*live fuel weight by sigma/WO */
-        Gfactor_in_dead[3][14], /*in dead fuel by the 6 classes */
-        G1, G2, G3, G4, G5, wo_dead[14], /*dead fuel total load */
+        Ffactor_all[4][41],     /*in all fuel subclasses by sigma/WO */
+        Ffactor_in_dead[3][41], /*in dead fuel subclasses by sigma/WO */
+        /* Ffactor_dead[41], */ /*dead fuel weight by sigma/WO */
+        /* Ffactor_live[41], */ /*live fuel weight by sigma/WO */
+        Gfactor_in_dead[3][41], /*in dead fuel by the 6 classes */
+        G1, G2, G3, G4, G5, wo_dead[41], /*dead fuel total load */
         wn_dead,                         /*net dead fuel total load */
         wn_live,                         /*net live fuel (total) load */
         class_sum, moisture[4], /*moistures of 1-h,10-h,100-h,live fuels */
@@ -193,7 +242,7 @@ int main(int argc, char *argv[])
 
     struct {
         struct Option *model, *mois_1h, *mois_10h, *mois_100h, *mois_live, *vel,
-            *dir, *elev, *slope, *aspect, *base, *max, *maxdir, *spotdist;
+            *dir, *elev, *slope, *aspect, *base, *max, *maxdir, *spotdist, *external_param_file;
     } parm;
 
     /* please, remove before GRASS 7 released */
@@ -348,10 +397,219 @@ int main(int argc, char *argv[])
         _("The maximal potential spotting distance"
           " (requires elevation raster map to be provided).");
 
+	/*DODAO MARIN - POCETAK*/
+    parm.external_param_file = G_define_option();
+    parm.external_param_file->key = "external_param_file";
+    parm.external_param_file->type = TYPE_STRING;
+    //parm.external_param_file->gisprompt = "new,cell,raster";
+    parm.external_param_file->description =
+	_("Name of the external file with defined parameters for ROS ?!!!");	
+	/*DODAO MARIN - KRAJ*/
+	
     /*   Parse command line */
     if (G_parser(argc, argv))
         exit(EXIT_FAILURE);
+	
+	/* MARIN DODAO - POCETAK */
+	if(parm.external_param_file->answer != NULL)
+	{
+		if( access( parm.external_param_file->answer, F_OK ) != -1 ) {
+			
+			G_warning(_("External parameter file <%s> chosen"), parm.external_param_file->answer);
+			
+					
+			char buffer[256];
+			FILE *fp;
+			//float WO_new[4][14];
+			int i=0;
+			numCategories=0;
+			
+			if( (fp = fopen(parm.external_param_file->answer, "r+")) == NULL)
+			{
+				G_warning(_("No such file\n"));
+				//exit(1);
+			} 
+			 if (fp == NULL)
+			{
+				G_warning(_("Error Reading File\n"));
+			}		
 
+			//Prvo odrediti o kojim je kategorijama rijec 13 ili 40
+			FILE  *fp_pre = fopen(parm.external_param_file->answer, "r+"); 
+			int                 c;              /* Nb. int (not char) for the EOF */
+
+			
+			/* count the newline characters */
+			while ( (c=fgetc(fp_pre)) != '\n' ) {
+				if ( c == ',' )
+					numCategories++;
+			}
+			fclose(fp_pre);
+			
+					
+			if (!(numCategories == 13 || numCategories == 40))
+			{
+				G_warning(_("Argument \"external_param_file\" - %s does not have neither 13 nor 40 categories! Choosing default parameters"), parm.external_param_file->answer);
+			}			
+			else
+			{
+				//Ako je rijec o Albini-Andersonu
+				if(numCategories == 13)
+				{				
+					G_message(_("***** Modifying Albini-Anderson categories *****\n"));			
+
+					
+					//Prvo rijesiti W0 do W3 jer je to zapisano u prva tri reda
+					for (i = 0; i < 3; i++){
+						fgets(buffer, 512, fp);
+						//printf("%d. \n", i);
+						sscanf(buffer, "%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f", &WO[i][0], &WO[i][1], &WO[i][2], &WO[i][3], &WO[i][4], &WO[i][5], &WO[i][6], &WO[i][7], &WO[i][8], &WO[i][9], &WO[i][10], &WO[i][11], &WO[i][12], &WO[i][13] );
+						//G_message(_("Uneseno je:\n"));
+						//G_message(_("%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f"), WO[i][0], WO[i][1], WO[i][2], WO[i][3], WO[i][4], WO[i][5], WO[i][6], WO[i][7], WO[i][8], WO[i][9], WO[i][10], WO[i][11], WO[i][12], WO[i][13] );
+						//G_message(_("\n"));
+					}
+					
+					float tempW3[2][14] ={ {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} };
+
+					
+					//Sad pročitati sljedeća dva reda, zapamtiti rezultate i odabrati ve�eg 
+					for (i = 0; i < 2; i++){
+						fgets(buffer, 512, fp);
+						sscanf(buffer, "%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f", &tempW3[i][0], &tempW3[i][1], &tempW3[i][2], &tempW3[i][3], &tempW3[i][4], &tempW3[i][5], &tempW3[i][6], &tempW3[i][7], &tempW3[i][8], &tempW3[i][9], &tempW3[i][10], &tempW3[i][11], &tempW3[i][12], &tempW3[i][13] );
+					}
+					//sad odabrati većeg
+					for (i = 0; i < 14; i++){
+						if(tempW3[0][i]>=tempW3[1][i])
+							WO[3][i]=tempW3[0][i];
+						else
+							WO[3][i]=tempW3[1][i];
+						
+						//G_message(_("%f "), WO[3][i]);
+					}
+					
+					for (i = 0; i < 1; i++){
+						fgets(buffer, 512, fp);
+						sscanf(buffer, "%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f", &DELTA[0], &DELTA[1], &DELTA[2], &DELTA[3], &DELTA[4], &DELTA[5], &DELTA[6], &DELTA[7], &DELTA[8], &DELTA[9], &DELTA[10], &DELTA[11], &DELTA[12], &DELTA[13] );
+						//G_message(_("%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f"), DELTA[0], DELTA[1], DELTA[2], DELTA[3], DELTA[4], DELTA[5], DELTA[6], DELTA[7], DELTA[8], DELTA[9], DELTA[10], DELTA[11], DELTA[12], DELTA[13] );
+						//G_message(_("\n"));
+					}
+					
+					for (i = 0; i < 1; i++){
+						fgets(buffer, 512, fp);
+						//printf("%d. \n", i);
+						sscanf(buffer, "%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f", &SIGMA[i][0], &SIGMA[i][1], &SIGMA[i][2], &SIGMA[i][3], &SIGMA[i][4], &SIGMA[i][5], &SIGMA[i][6], &SIGMA[i][7], &SIGMA[i][8], &SIGMA[i][9], &SIGMA[i][10], &SIGMA[i][11], &SIGMA[i][12], &SIGMA[i][13] );
+						//G_message(_("%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f"), SIGMA[i][0], SIGMA[i][1], SIGMA[i][2], SIGMA[i][3], SIGMA[i][4], SIGMA[i][5], SIGMA[i][6], SIGMA[i][7], SIGMA[i][8], SIGMA[i][9], SIGMA[i][10], SIGMA[i][11], SIGMA[i][12], SIGMA[i][13] );
+						//G_message(_("\n"));
+					}
+					
+					//Za sada se zanemaruju sljede�a dva reda 
+					for (i = 0; i < 2; i++){
+						fgets(buffer, 512, fp);
+						//printf("%d. \n", i);
+						//sscanf(buffer, "%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f", &SIGMA[i][0], &SIGMA[i][1], &SIGMA[i][2], &SIGMA[i][3], &SIGMA[i][4], &SIGMA[i][5], &SIGMA[i][6], &SIGMA[i][7], &SIGMA[i][8], &SIGMA[i][9], &SIGMA[i][10], &SIGMA[i][11], &SIGMA[i][12], &SIGMA[i][13] );
+						//G_message(_("%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f"), SIGMA[i][0], SIGMA[i][1], SIGMA[i][2], SIGMA[i][3], SIGMA[i][4], SIGMA[i][5], SIGMA[i][6], SIGMA[i][7], SIGMA[i][8], SIGMA[i][9], SIGMA[i][10], SIGMA[i][11], SIGMA[i][12], SIGMA[i][13] );
+						//G_message(_("\n"));
+					}
+					
+					
+					for (i = 0; i < 1; i++){
+						fgets(buffer, 512, fp);
+						//printf("%d. \n", i);
+						sscanf(buffer, "%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f", &MX[0], &MX[1], &MX[2], &MX[3], &MX[4], &MX[5], &MX[6], &MX[7], &MX[8], &MX[9], &MX[10], &MX[11], &MX[12], &MX[13] );
+						//G_message(_("%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f"), MX[0], MX[1], MX[2], MX[3], MX[4], MX[5], MX[6], MX[7], MX[8], MX[9], MX[10], MX[11], MX[12], MX[13] );
+						//G_message(_("\n"));
+					}
+					
+					//Ostatak parametara se zanemaruje za sada ...
+					
+					G_message(_("***** Measurements of the 13 fuel models MODIFIED *****"));
+				}				
+				else if(numCategories == 40)
+				{	
+					G_message(_("***** Modifying Scott-Burgan categories *****\n"));	
+					
+					//Prvo rijesiti W0 do W3 jer je to zapisano u prva tri reda
+					for (i = 0; i < 3; i++){
+						fgets(buffer, 512, fp);
+						//printf("%d. \n", i);
+						sscanf(buffer, "%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f", &WO[i][0], &WO[i][1], &WO[i][2], &WO[i][3], &WO[i][4], &WO[i][5], &WO[i][6], &WO[i][7], &WO[i][8], &WO[i][9], &WO[i][10], &WO[i][11], &WO[i][12], &WO[i][13], &WO[i][14], &WO[i][15], &WO[i][16], &WO[i][17], &WO[i][18], &WO[i][19], &WO[i][20], &WO[i][21], &WO[i][22], &WO[i][23], &WO[i][24], &WO[i][25], &WO[i][26], &WO[i][27], &WO[i][28], &WO[i][29], &WO[i][30], &WO[i][31], &WO[i][32], &WO[i][33], &WO[i][34], &WO[i][35], &WO[i][36], &WO[i][37], &WO[i][38], &WO[i][39], &WO[i][40]);
+						//G_message(_("%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f"), WO[i][0], WO[i][1], WO[i][2], WO[i][3], WO[i][4], WO[i][5], WO[i][6], WO[i][7], WO[i][8], WO[i][9], WO[i][10], WO[i][11], WO[i][12], WO[i][13], WO[i][14], WO[i][15], WO[i][16], WO[i][17], WO[i][18], WO[i][19], WO[i][20], WO[i][21], WO[i][22], WO[i][23], WO[i][24], WO[i][25], WO[i][26], WO[i][27], WO[i][28], WO[i][29], WO[i][30], WO[i][31], WO[i][32], WO[i][33], WO[i][34], WO[i][35], WO[i][36], WO[i][37], WO[i][38], WO[i][39], WO[i][40] );
+						//G_message(_("\n"));
+					}
+					
+					float tempW3[2][41] ={ {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} };
+
+					
+					//Sad pro�itati sljede�a dva reda, zapamtiti rezultate i odabrati ve�eg 
+					for (i = 0; i < 2; i++){
+						fgets(buffer, 512, fp);
+						sscanf(buffer, "%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f", &tempW3[i][0], &tempW3[i][1], &tempW3[i][2], &tempW3[i][3], &tempW3[i][4], &tempW3[i][5], &tempW3[i][6], &tempW3[i][7], &tempW3[i][8], &tempW3[i][9], &tempW3[i][10], &tempW3[i][11], &tempW3[i][12], &tempW3[i][13], &tempW3[i][14], &tempW3[i][15], &tempW3[i][16], &tempW3[i][17], &tempW3[i][18], &tempW3[i][19], &tempW3[i][20], &tempW3[i][21], &tempW3[i][22], &tempW3[i][23], &tempW3[i][24], &tempW3[i][25], &tempW3[i][26], &tempW3[i][27], &tempW3[i][28], &tempW3[i][29], &tempW3[i][30], &tempW3[i][31], &tempW3[i][32], &tempW3[i][33], &tempW3[i][34], &tempW3[i][35], &tempW3[i][36], &tempW3[i][37], &tempW3[i][38], &tempW3[i][39], &tempW3[i][40]);
+					}
+					//sad odabrati ve�eg
+					for (i = 0; i < 41; i++){
+						if(tempW3[0][i]>=tempW3[1][i])
+							WO[3][i]=tempW3[0][i];
+						else
+							WO[3][i]=tempW3[1][i];
+						
+						//G_message(_("%f "), WO[3][i]);
+					}
+					
+					
+					for (i = 0; i < 1; i++){
+						fgets(buffer, 512, fp);
+						sscanf(buffer, "%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f", &DELTA[0], &DELTA[1], &DELTA[2], &DELTA[3], &DELTA[4], &DELTA[5], &DELTA[6], &DELTA[7], &DELTA[8], &DELTA[9], &DELTA[10], &DELTA[11], &DELTA[12], &DELTA[13], &DELTA[14], &DELTA[15], &DELTA[16], &DELTA[17], &DELTA[18], &DELTA[19], &DELTA[20], &DELTA[21], &DELTA[22], &DELTA[23], &DELTA[24], &DELTA[25], &DELTA[26], &DELTA[27], &DELTA[28], &DELTA[29], &DELTA[30], &DELTA[31], &DELTA[32], &DELTA[33], &DELTA[34], &DELTA[35], &DELTA[36], &DELTA[37], &DELTA[38], &DELTA[39], &DELTA[40]);
+						//G_message(_("%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f"), DELTA[0], DELTA[1], DELTA[2], DELTA[3], DELTA[4], DELTA[5], DELTA[6], DELTA[7], DELTA[8], DELTA[9], DELTA[10], DELTA[11], DELTA[12], DELTA[13], DELTA[14], DELTA[15], DELTA[16], DELTA[17], DELTA[18], DELTA[19], DELTA[20], DELTA[21], DELTA[22], DELTA[23], DELTA[24], DELTA[25], DELTA[26], DELTA[27], DELTA[28], DELTA[29], DELTA[30], DELTA[31], DELTA[32], DELTA[33], DELTA[34], DELTA[35], DELTA[36], DELTA[37], DELTA[38], DELTA[39], DELTA[40]);
+						//G_message(_("\n"));
+					}
+					
+					
+					for (i = 0; i < 1; i++){
+						fgets(buffer, 512, fp);
+						//printf("%d. \n", i);
+						sscanf(buffer, "%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f", &SIGMA[i][0], &SIGMA[i][1], &SIGMA[i][2], &SIGMA[i][3], &SIGMA[i][4], &SIGMA[i][5], &SIGMA[i][6], &SIGMA[i][7], &SIGMA[i][8], &SIGMA[i][9], &SIGMA[i][10], &SIGMA[i][11], &SIGMA[i][12], &SIGMA[i][13], &SIGMA[i][14], &SIGMA[i][15], &SIGMA[i][16], &SIGMA[i][17], &SIGMA[i][18], &SIGMA[i][19], &SIGMA[i][20], &SIGMA[i][21], &SIGMA[i][22], &SIGMA[i][23], &SIGMA[i][24], &SIGMA[i][25], &SIGMA[i][26], &SIGMA[i][27], &SIGMA[i][28], &SIGMA[i][29], &SIGMA[i][30], &SIGMA[i][31], &SIGMA[i][32], &SIGMA[i][33], &SIGMA[i][34], &SIGMA[i][35], &SIGMA[i][36], &SIGMA[i][37], &SIGMA[i][38], &SIGMA[i][39], &SIGMA[i][40]);
+						//G_message(_("%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f"), SIGMA[i][0], SIGMA[i][1], SIGMA[i][2], SIGMA[i][3], SIGMA[i][4], SIGMA[i][5], SIGMA[i][6], SIGMA[i][7], SIGMA[i][8], SIGMA[i][9], SIGMA[i][10], SIGMA[i][11], SIGMA[i][12], SIGMA[i][13], SIGMA[i][14], SIGMA[i][15], SIGMA[i][16], SIGMA[i][17], SIGMA[i][18], SIGMA[i][19], SIGMA[i][20], SIGMA[i][21], SIGMA[i][22], SIGMA[i][23], SIGMA[i][24], SIGMA[i][25], SIGMA[i][26], SIGMA[i][27], SIGMA[i][28], SIGMA[i][29], SIGMA[i][30], SIGMA[i][31], SIGMA[i][32], SIGMA[i][33], SIGMA[i][34], SIGMA[i][35], SIGMA[i][36], SIGMA[i][37], SIGMA[i][38], SIGMA[i][39], SIGMA[i][40]);
+						//G_message(_("\n"));
+					}
+					
+					/*citation:
+						For all fuel models in this new set:
+						� 10-hr dead fuel SAV is 109 1/ft, and 100-hr SAV is 30 1/ft
+						*/
+					
+					//Za sada se zanemaruju sljede�a dva reda 
+					for (i = 0; i < 41; i++){
+						SIGMA[2][i]=109;
+						SIGMA[3][i]=30;
+					}
+					//G_message(_("%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f"), SIGMA[2][0], SIGMA[2][1], SIGMA[2][2], SIGMA[2][3], SIGMA[2][4], SIGMA[2][5], SIGMA[2][6], SIGMA[2][7], SIGMA[2][8], SIGMA[2][9], SIGMA[2][10], SIGMA[2][11], SIGMA[2][12], SIGMA[2][13], SIGMA[2][14], SIGMA[2][15], SIGMA[2][16], SIGMA[2][17], SIGMA[2][18], SIGMA[2][19], SIGMA[2][20], SIGMA[2][21], SIGMA[2][22], SIGMA[2][23], SIGMA[2][24], SIGMA[2][25], SIGMA[2][26], SIGMA[2][27], SIGMA[2][28], SIGMA[2][29], SIGMA[2][30], SIGMA[2][31], SIGMA[2][32], SIGMA[2][33], SIGMA[2][34], SIGMA[2][35], SIGMA[2][36], SIGMA[2][37], SIGMA[2][38], SIGMA[2][39], SIGMA[2][40]);
+					//G_message(_("\n\n"));
+					//G_message(_("%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f"), SIGMA[3][0], SIGMA[3][1], SIGMA[3][3], SIGMA[3][3], SIGMA[3][4], SIGMA[3][5], SIGMA[3][6], SIGMA[3][7], SIGMA[3][8], SIGMA[3][9], SIGMA[3][10], SIGMA[3][11], SIGMA[3][12], SIGMA[3][13], SIGMA[3][14], SIGMA[3][15], SIGMA[3][16], SIGMA[3][17], SIGMA[3][18], SIGMA[3][19], SIGMA[3][20], SIGMA[3][21], SIGMA[3][22], SIGMA[3][23], SIGMA[3][24], SIGMA[3][25], SIGMA[3][26], SIGMA[3][27], SIGMA[3][28], SIGMA[3][29], SIGMA[3][30], SIGMA[3][31], SIGMA[3][32], SIGMA[3][33], SIGMA[3][34], SIGMA[3][35], SIGMA[3][36], SIGMA[3][37], SIGMA[3][38], SIGMA[3][39], SIGMA[3][40]);
+					
+					
+					for (i = 0; i < 1; i++){
+						fgets(buffer, 512, fp);
+						//printf("%d. \n", i);
+						sscanf(buffer, "%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f", &MX[0], &MX[1], &MX[2], &MX[3], &MX[4], &MX[5], &MX[6], &MX[7], &MX[8], &MX[9], &MX[10], &MX[11], &MX[12], &MX[13], &MX[14], &MX[15], &MX[16], &MX[17], &MX[18], &MX[19], &MX[20], &MX[21], &MX[22], &MX[23], &MX[24], &MX[25], &MX[26], &MX[27], &MX[28], &MX[29], &MX[30], &MX[31], &MX[32], &MX[33], &MX[34], &MX[35], &MX[36], &MX[37], &MX[38], &MX[39], &MX[40]);
+						//G_message(_("%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f"), MX[0], MX[1], MX[2], MX[3], MX[4], MX[5], MX[6], MX[7], MX[8], MX[9], MX[10], MX[11], MX[12], MX[13], MX[14], MX[15], MX[16], MX[17], MX[18], MX[19], MX[20], MX[21], MX[22], MX[23], MX[24], MX[25], MX[26], MX[27], MX[28], MX[29], MX[30], MX[31], MX[32], MX[33], MX[34], MX[35], MX[36], MX[37], MX[38], MX[39], MX[40]);
+						//G_message(_("\n"));
+					}
+					
+					//Ostatak parametara se zanemaruje za sada ...
+					
+					G_message(_("***** Measurements of the 40 fuel models MODIFIED *****"));
+			
+				}
+			}
+				
+		} else {
+			// file doesn't exist
+			G_warning(_("Argument \"external_param_file\" - %s doesn't exist! Choosing default parameters"), parm.external_param_file->answer);
+		}
+
+	}
+	/* MARIN DODAO - KRAJ */
+	
     if (parm.spotdist->answer)
         spotting = 1;
     else
@@ -511,7 +769,7 @@ int main(int argc, char *argv[])
     /*wo[model] -- simple sum of WO[class][model] by all fuel subCLASS */
     /*sigma[model] -- weighted sum of SIGMA[class][model] by all fuel subCLASS
      * *epsilon[class][model] */
-    for (model = 1; model <= 13; model++) {
+    for (model = 1; model <= numCategories; model++) {
         class_sum = 0.0;
         wo_dead[model] = 0.0;
         sigma[model] = 0.0;
@@ -614,9 +872,9 @@ int main(int argc, char *argv[])
         }
 
         for (col = 0; col < ncols; col++) {
-            /*check if a fuel is within the 13 models,
+            /*check if a fuel is within the numCategories models,
              *if not, no processing; useful when no data presents*/
-            if (fuel[col] < 1 || fuel[col] > 13)
+            if (fuel[col] < 1 || fuel[col] > numCategories)
                 continue;
             if (parm.mois_1h->answer)
                 moisture[0] = 0.01 * mois_1h[col];
